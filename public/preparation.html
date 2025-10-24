@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WINK EXPRESS - Logistique Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <meta name="theme-color" content="#FF7F50">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/wink-icon-192x192.png">
+    <meta name="apple-mobile-web-app-status-bar" content="#2C3E50">
+    <style>
+        :root {
+            --clr-primary: #FF7F50; /* Corail */
+            --clr-secondary: #2C3E50; /* Bleu Profond */
+            --clr-accent: #4A6491; /* Bleu Céleste */
+            --clr-background: #F8F9FA; /* Blanc Crème */
+            --clr-text: #34495E; /* Gris Anthracite */
+            --clr-ready: #0dcaf0; /* Bleu Cyan pour Prêt */
+            --clr-ready-border: #0d6efd; /* Bleu plus foncé pour bordure */
+            --clr-inprogress: #ffc107; /* Jaune pour En Cours */
+            --clr-return: #dc3545; /* Rouge pour Retour */
+            --clr-light-gray: #e9ecef;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --card-radius: 12px;
+        }
+        body { background-color: var(--clr-background); font-family: sans-serif; display: flex; min-height: 100vh; overflow-x: hidden; }
+
+        /* --- Styles Sidebar & Header (Cohérents) --- */
+        .sidebar { width: 250px; background-color: var(--clr-secondary); min-height: 100vh; position: fixed; top: 0; left: 0; color: white; padding: 20px; transition: transform 0.3s ease; z-index: 1050; }
+        .sidebar-header { padding-bottom: 20px; border-bottom: 1px solid var(--clr-accent); margin-bottom: 20px; }
+        .sidebar .nav-link { color: white; padding: 10px 15px; margin-bottom: 5px; border-radius: 5px; transition: background-color 0.2s; }
+        .sidebar .nav-link:hover { background-color: var(--clr-accent); }
+        .sidebar .nav-link.active { background-color: var(--clr-primary); }
+        .main-content { margin-left: 250px; padding: 20px; flex-grow: 1; transition: margin-left 0.3s ease; display: flex; flex-direction: column; position: relative; }
+        @media (max-width: 991.98px) { .sidebar { transform: translateX(-250px); } .sidebar.show { transform: translateX(0); } .main-content { margin-left: 0; } }
+        @media (min-width: 992px) { .sidebar.collapsed { transform: translateX(-250px); } .main-content.expanded { margin-left: 0; } }
+        .header { background-color: white; padding: 15px 20px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .toggler { font-size: 1.5rem; color: var(--clr-secondary); cursor: pointer; }
+        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 2000; width: 350px; max-width: 90%; }
+        .btn-primary-custom { background-color: var(--clr-primary); border-color: var(--clr-primary); color: white; }
+        .btn-primary-custom:hover { background-color: #FF6347; border-color: #FF6347; }
+
+        /* --- Style d'onglets (Cohérent) --- */
+        .hub-nav-tabs { border-bottom: 2px solid #dee2e6; margin-bottom: 1.5rem; }
+        .hub-nav-tabs .nav-link { border: none; border-bottom: 2px solid transparent; color: var(--clr-secondary); font-weight: 500; padding: 0.5rem 1rem; margin-bottom: -2px; transition: all 0.2s ease; }
+        .hub-nav-tabs .nav-link.active { color: var(--clr-primary); border-color: var(--clr-primary); background-color: transparent; }
+        .hub-nav-tabs .nav-link:hover { color: var(--clr-primary); border-bottom-color: var(--clr-primary); }
+
+        /* --- NOUVEAU STYLE PRÉPARATION (Refonte Visuelle) --- */
+        .deliveryman-group { background-color: transparent; border: none; box-shadow: none; margin-bottom: 1.5rem; } 
+        .deliveryman-header { 
+            background-color: var(--clr-secondary); 
+            color: white; 
+            padding: 0.6rem 1rem; 
+            font-weight: 600; 
+            border-radius: var(--card-radius) var(--card-radius) 0 0; 
+            display: flex;
+            justify-content: space-between;
+        }
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; padding: 0; }
+        
+        .order-card-prep {
+            background-color: white;
+            border-radius: var(--card-radius);
+            box-shadow: var(--card-shadow);
+            padding: 1rem;
+            position: relative; 
+            border-left: 4px solid var(--clr-inprogress); 
+            transition: border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+        .order-card-prep.is-ready {
+            border-left-color: var(--clr-ready-border); 
+            background-color: #f0f9ff;
+        }
+        .order-card-prep .order-id { font-weight: bold; font-size: 1.1rem; color: var(--clr-secondary); margin-bottom: 0.5rem; }
+        .order-card-prep.is-ready .order-id { color: var(--clr-ready-border); }
+        
+        /* Bouton Crayon (Modification) */
+        .order-card-prep .btn-edit-items { 
+             position: absolute;
+             top: 0.75rem;
+             right: 0.75rem;
+             color: var(--clr-accent);
+             font-size: 1.1rem;
+             background: none;
+             border: none;
+             padding: 0.2rem 0.4rem;
+             border-radius: 50%;
+             z-index: 10; /* Assure le clic */
+         }
+        .order-card-prep .btn-edit-items:hover { color: var(--clr-primary); background-color: var(--clr-light-gray); }
+        
+        /* Lignes d'info */
+        .order-card-prep .info-line { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; font-size: 0.9rem; color: var(--clr-text); }
+        .order-card-prep .info-line i { color: var(--clr-accent); width: 16px; text-align: center; }
+        .order-card-prep h6 { font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; color: var(--clr-secondary); border-top: 1px solid var(--clr-light-gray); padding-top: 0.5rem; }
+        .order-card-prep .items-list { font-size: 0.8rem; padding-left: 0.5rem; margin-bottom: 0.5rem; max-height: 70px; overflow-y: auto; color: var(--clr-text); }
+        
+        /* Bouton d'Action Principal (Séparé du Crayon) */
+        .order-card-prep .action-button-container { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--clr-light-gray);} 
+        .order-card-prep .btn-ready-action { 
+            width: 100%;
+            font-weight: 600; 
+            transition: all 0.2s;
+         }
+        .order-card-prep .btn-ready-action.mark-ready-btn { /* Style du bouton quand il est "Marquer Prête" */
+             background-color: var(--clr-primary);
+             border-color: var(--clr-primary);
+             color: white;
+         }
+        .order-card-prep .btn-ready-action.confirm-ready-btn { /* Style du bouton quand il est "Préparation Confirmée" */
+             background-color: var(--clr-light-gray);
+             border-color: var(--clr-light-gray);
+             color: var(--clr-secondary);
+         }
+        .order-card-prep .btn-ready-action:disabled {
+             opacity: 0.8;
+             cursor: not-allowed;
+         }
+        .order-card-prep .text-muted { font-size: 0.75rem; }
+
+        /* --- Styles Retours --- */
+        .returns-section .filter-bar { background-color: #fff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .returns-table thead th { font-size: 0.8rem; white-space: nowrap; }
+        .returns-table tbody td { font-size: 0.8rem; white-space: nowrap; vertical-align: middle; }
+        .btn-confirm-return { background-color: var(--clr-return); border-color: var(--clr-return); color: white; transition: all 0.2s; }
+        .btn-confirm-return:hover { background-color: #c82333; border-color: #c82333; color: white; }
+
+        /* --- Modale Édition Articles (Adaptée) --- */
+        .item-row-modal { align-items: flex-end; }
+        .remove-item-btn-modal { background: none; border: none; color: #dc3545; font-size: 1.25rem; cursor: pointer; padding: 0; line-height: 1; }
+        /* Style pour les champs d'INFO/READONLY dans la modale */
+        .form-control[readonly], .form-control:disabled {
+            background-color: var(--clr-light-gray);
+            opacity: 1; /* Retirer l'opacité pour le style */
+            cursor: default;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header d-flex justify-content-center">
+            <img src="wink-logo.png" alt="Logo WINK EXPRESS" style="width: 150px;">
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> Tableau de bord</a>
+            <a class="nav-link" href="orders.html"><i class="bi bi-box-seam"></i> Commandes</a>
+            <a class="nav-link active" href="preparation.html"><i class="bi bi-box-arrow-in-up"></i> Logistique Hub</a>
+            <a class="nav-link" href="deliverymen.html"><i class="bi bi-bicycle"></i> Livreurs</a>
+            <a class="nav-link" href="shops.html"><i class="bi bi-shop"></i> Marchands</a>
+            <a class="nav-link" href="reports.html"><i class="bi bi-file-earmark-bar-graph"></i> Rapports</a>
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="remittancesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-wallet"></i> Versements
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="remittancesDropdown">
+                    <li><a class="dropdown-item" href="remittances.html">Versements en attente</a></li>
+                    <li><a class="dropdown-item" href="debts.html">Créances</a></li>
+                    <li><a class="dropdown-item" href="cash.html">Caisse</a></li>
+                </ul>
+            </div>
+            <a class="nav-link" href="suivis.html">
+                <i class="bi bi-chat-dots me-2"></i> Suivis
+                <span class="badge bg-danger ms-auto d-none" id="global-unread-badge">0</span>
+            </a>
+            <a class="nav-link" href="users.html"><i class="bi bi-person"></i> Utilisateurs</a>
+        </nav>
+    </aside>
+
+    <main class="main-content" id="main-content">
+        <header class="header">
+            <i class="bi bi-list toggler" id="sidebar-toggler"></i>
+            <h1 class="h4 mb-0 ms-3 flex-grow-1">Logistique Hub</h1>
+            <div class="d-flex align-items-center">
+                 <button id="notificationBtn" class="btn btn-sm btn-outline-secondary me-3" data-bs-toggle="modal" data-bs-target="#notificationModal" title="Notifications Hub">
+                    <i class="bi bi-bell"></i>
+                    <span id="hubNotificationBadge" class="badge rounded-pill bg-danger d-none">0</span>
+                </button>
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name=A&size=32&background=2C3E50&color=fff&rounded=true" alt="Avatar" width="32" height="32" class="rounded-circle me-2">
+                        <span id="userName">Admin</span>
+                    </a>
+                    <ul class="dropdown-menu text-small shadow">
+                        <li><a class="dropdown-item" href="#" id="logoutBtn">Déconnexion</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <ul class="nav hub-nav-tabs" id="hubTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="preparation-tab" data-bs-toggle="tab" data-bs-target="#preparation-panel" type="button" role="tab">
+                    <i class="bi bi-box-seam me-1"></i> Préparation Colis (<span id="prepCount">0</span>)
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="returns-tab" data-bs-toggle="tab" data-bs-target="#returns-panel" type="button" role="tab">
+                    <i class="bi bi-box-arrow-left me-1"></i> Gestion des Retours (<span id="returnCount">0</span>)
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content flex-grow-1" id="hubTabContent">
+
+            <div class="tab-pane fade show active" id="preparation-panel" role="tabpanel" aria-labelledby="preparation-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Commandes à Préparer/Vérifier</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshPrepBtn"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+                </div>
+                <div id="preparation-container" class="preparation-section">
+                    <div id="loading-prep" class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="returns-panel" role="tabpanel" aria-labelledby="returns-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Retours Déclarés</h5>
+                     <button class="btn btn-sm btn-outline-primary" id="refreshReturnsBtn"><i class="bi bi-arrow-clockwise"></i> Actualiser</button>
+                </div>
+                <div class="filter-bar returns-section">
+                    <form id="returnFiltersForm" class="row g-2 align-items-end">
+                        <div class="col-md-3 col-sm-6">
+                            <label for="returnStatusFilter" class="form-label small mb-0">Statut Suivi</label>
+                            <select class="form-select form-select-sm" id="returnStatusFilter">
+                                <option value="pending_return_to_hub" selected>En attente Hub</option>
+                                <option value="received_at_hub">Confirmé Hub</option>
+                                <option value="all">Tous (Déclarés)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <label for="returnDeliverymanFilter" class="form-label small mb-0">Livreur</label>
+                            <select class="form-select form-select-sm" id="returnDeliverymanFilter">
+                                <option value="">Tous les livreurs</option>
+                                </select>
+                        </div>
+                        <div class="col-md-2 col-sm-6">
+                            <label for="returnStartDate" class="form-label small mb-0">Du</label>
+                            <input type="date" class="form-control form-control-sm" id="returnStartDate">
+                        </div>
+                        <div class="col-md-2 col-sm-6">
+                            <label for="returnEndDate" class="form-label small mb-0">Au</label>
+                            <input type="date" class="form-control form-control-sm" id="returnEndDate">
+                        </div>
+                        <div class="col-md-2 col-sm-12 d-grid">
+                            <button type="submit" class="btn btn-sm btn-secondary"><i class="bi bi-funnel"></i> Filtrer</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card returns-section">
+                    <div class="table-responsive">
+                        <table class="table table-striped returns-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Tracking ID</th>
+                                    <th>Cde ID</th>
+                                    <th>Livreur</th>
+                                    <th>Marchand</th>
+                                    <th>Date Décl.</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="returnsTableBody">
+                                <tr><td colspan="7" class="text-center p-3" id="loading-returns">Chargement des retours...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div class="modal fade" id="notificationModal" tabindex="-1">
+         <div class="modal-dialog modal-dialog-centered modal-sm">
+             <div class="modal-content">
+                 <div class="modal-header">
+                     <h5 class="modal-title">Notifications Hub</h5>
+                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                 </div>
+                 <div class="modal-body p-0" id="hubNotificationList">
+                     <p class="text-center text-muted p-3">Aucune nouvelle notification.</p>
+                 </div>
+             </div>
+         </div>
+     </div>
+
+
+    <div class="modal fade" id="editItemsModal" tabindex="-1" aria-labelledby="editItemsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editItemsModalLabel">Vérifier/Modifier Articles Cde #<span id="editItemsOrderId"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="editItemsForm">
+            <div class="modal-body">
+                <div class="alert alert-warning small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Modifiez ici **uniquement le nom ou la quantité** des articles. Les montants et frais sont non modifiables.
+                </div>
+                <input type="hidden" id="editItems_OrderId_Hidden">
+
+                <h6 class="d-flex justify-content-between align-items-center mb-2">
+                    Articles
+                    <button type="button" class="btn btn-secondary btn-sm" id="modalAddItemBtn">
+                        <i class="bi bi-plus-circle"></i> Ajouter Ligne
+                    </button>
+                </h6>
+                <div id="modalItemsContainer">
+                    </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="modalDeliveryFee" class="form-label">Frais de livraison (Info)</label>
+                        <input type="number" class="form-control" id="modalDeliveryFee" min="0" readonly> </div>
+                     <div class="col-md-6">
+                        <label for="modalExpeditionFee" class="form-label">Frais d'expédition (Info)</label>
+                        <input type="number" class="form-control" id="modalExpeditionFee" min="0" readonly> </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-primary-custom" id="saveItemsAndMarkReadyBtn">
+                <i class="bi bi-save me-1"></i> Sauvegarder les Modifications
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/preparation.js"></script> <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    <script src="/js/pwa-loader.js" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarToggler = document.getElementById('sidebar-toggler');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+
+            if (sidebarToggler && sidebar && mainContent) {
+                sidebarToggler.addEventListener('click', () => {
+                    if (window.innerWidth < 992) {
+                        try {
+                            const offcanvas = bootstrap.Offcanvas.getInstance(sidebar) || new bootstrap.Offcanvas(sidebar);
+                            offcanvas.toggle();
+                        } catch (e) {
+                            sidebar.classList.toggle('show');
+                        }
+                    } else {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('expanded');
+                    }
+                });
+            }
+
+             // --- Highlight Active Link ---
+             const currentPath = window.location.pathname.split('/').pop() || 'preparation.html';
+             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                 link.classList.remove('active');
+                 const dropdownItem = link.closest('.dropdown-menu')?.querySelector(`.dropdown-item[href="${currentPath}"]`);
+                 if (dropdownItem) {
+                     dropdownItem.classList.add('active');
+                     link.classList.add('active');
+                 } else if (link.getAttribute('href') === currentPath) {
+                     link.classList.add('active');
+                 }
+             });
+        });
+    </script>
+</body>
+</html>
