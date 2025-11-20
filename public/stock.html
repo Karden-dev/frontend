@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinkShop - Gestion de Stock</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* --- STYLES SPÉCIFIQUES STOCK --- */
+
+        /* Note: On garde ces styles de cartes car ils utilisent Flexbox
+           différemment du Dashboard pour aligner l'icône à droite */
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+
+        .stat-title {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .icon-box {
+            width: 45px; height: 45px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        /* Variantes de couleur */
+        .bg-light-primary { background: #e0e7ff; color: var(--primary-color); }
+        .bg-light-info { background: #e0f2fe; color: #0ea5e9; }
+        .bg-light-warning { background: #fef3c7; color: #d97706; }
+        .bg-light-danger { background: #fee2e2; color: #dc2626; }
+
+        /* --- TABLE & ELEMENTS --- */
+        .product-img {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            margin-right: 15px;
+        }
+
+        .btn-quick-add {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            color: var(--primary-color);
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-quick-add:hover { background: var(--primary-color); color: white; }
+
+        .table thead th {
+            background-color: #f8fafc;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #64748b;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table tbody td { padding: 15px; vertical-align: middle; }
+        
+        .progress-thin { height: 5px; border-radius: 3px; background-color: #f3f4f6; margin-top: 8px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="sidebar-container"></div>
+
+    <main class="main-content" id="mainContent">
+        
+        <div id="topbar-container"></div>
+
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <span class="h4 fw-bold align-middle">Inventaire & Stock</span>
+            </div>
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#productModal">
+                <i class="fas fa-plus me-2"></i> Nouveau Produit
+            </button>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Valeur Globale</div>
+                        <div class="stat-value" id="totalStockValue">0 FCFA</div>
+                        <small class="text-muted">Capital immobilisé</small>
+                    </div>
+                    <div class="icon-box bg-light-primary">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Volume Stock</div>
+                        <div class="stat-value" id="totalItemsCount">0</div>
+                        <small class="text-muted">Unités physiques</small>
+                    </div>
+                    <div class="icon-box bg-light-info">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Stock Faible</div>
+                        <div class="stat-value text-warning" id="lowStockCount">0</div>
+                        <small class="text-warning">À réapprovisionner</small>
+                    </div>
+                    <div class="icon-box bg-light-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Rupture</div>
+                        <div class="stat-value text-danger" id="outOfStockCount">0</div>
+                        <small class="text-danger">Ventes bloquées</small>
+                    </div>
+                    <div class="icon-box bg-light-danger">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-4 shadow-sm overflow-hidden border border-light">
+            <div class="p-4 border-bottom d-flex gap-3 align-items-center">
+                <div class="flex-grow-1 position-relative">
+                    <i class="fas fa-search position-absolute text-muted" style="left: 15px; top: 50%; transform: translateY(-50%);"></i>
+                    <input type="text" id="searchStock" class="form-control ps-5" placeholder="Rechercher un produit, une référence...">
+                </div>
+                <select id="filterStock" class="form-select w-auto border-0 bg-light fw-medium">
+                    <option value="all">Tous les produits</option>
+                    <option value="low">Stock Faible</option>
+                    <option value="out">Rupture</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 35%;">Produit</th>
+                            <th class="text-end">Prix Unitaire</th>
+                            <th style="width: 30%;">Disponibilité</th>
+                            <th class="text-center">État</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold ps-2">Fiche Produit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="productForm">
+                        <input type="hidden" id="productId">
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Désignation</label>
+                            <input type="text" class="form-control form-control-lg" id="productName" placeholder="Ex: Montre Connectée" required>
+                        </div>
+                        <div class="row g-4 mb-4">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Prix Vente</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="productPrice" required>
+                                    <span class="input-group-text bg-light">FCFA</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Stock Actuel</label>
+                                <input type="number" class="form-control" id="productQty" required>
+                            </div>
+                        </div>
+                        <div class="bg-light p-3 rounded-3">
+                            <label class="form-label small fw-bold text-muted mb-1">Seuil d'alerte (Low Stock)</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="range" class="form-range flex-grow-1" id="productThresholdSlider" min="1" max="50" value="5">
+                                <input type="number" class="form-control w-25 text-center" id="productThreshold" value="5">
+                            </div>
+                            <div class="form-text small mt-2"><i class="fab fa-whatsapp text-success"></i> Une alerte sera envoyée si le stock descend sous ce seuil.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0 pe-4 pb-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="saveProductBtn">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="restockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3 text-primary"><i class="fas fa-box-open fa-2x"></i></div>
+                    <h6 class="fw-bold mb-1">Ajouter du Stock</h6>
+                    <p class="small text-muted mb-3" id="restockProductName">...</p>
+                    
+                    <div class="input-group mb-3 justify-content-center">
+                        <button class="btn btn-outline-secondary rounded-start-pill" type="button" onclick="adjustRestock(-1)">-</button>
+                        <input type="number" id="restockQty" class="form-control text-center" value="10" style="max-width: 70px;">
+                        <button class="btn btn-outline-secondary rounded-end-pill" type="button" onclick="adjustRestock(1)">+</button>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100 rounded-pill" id="confirmRestockBtn">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="js/layout.js"></script>
+    <script src="js/stock.js"></script>
+</body>
+</html>
