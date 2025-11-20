@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinkShop - Call Center</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* 1. Barre de Recherche (Style avec icône intégrée) */
+        .search-wrapper { position: relative; width: 100%; }
+        .search-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 15px 12px 45px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 15px center;
+            background-size: 20px;
+        }
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        /* 2. Tableau Compact & Typo */
+        .table-compact td { padding: 12px 15px !important; vertical-align: middle; font-size: 0.9rem; }
+        
+        .client-name { font-weight: 700; color: #1e293b; line-height: 1.2; }
+        
+        /* Correction Téléphone : Même police que le reste, gris plus doux */
+        .client-phone {
+            font-weight: 500;
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            font-family: 'Inter', sans-serif; 
+            letter-spacing: 0.3px;
+        }
+
+        /* 3. Statuts : Point + Texte (Sans badge de fond) */
+        .status-cell-wrapper {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        /* Couleurs spécifiques */
+        .st-livre { color: #15803d; } .st-livre .status-dot { background: #15803d; }       /* Vert */
+        .st-programme { color: #b45309; } .st-programme .status-dot { background: #fbbf24; } /* Jaune/Or */
+        .st-relance { color: #c2410c; } .st-relance .status-dot { background: #f97316; }     /* Orange */
+        .st-confirmer { color: #0369a1; } .st-confirmer .status-dot { background: #0ea5e9; } /* Bleu Ciel */
+        .st-annule { color: #b91c1c; } .st-annule .status-dot { background: #ef4444; }     /* Rouge */
+        .st-attente { color: #475569; } .st-attente .status-dot { background: #cbd5e1; }     /* Gris */
+
+        /* 4. Animations Alertes (Uniquement sur l'icône) */
+        @keyframes swing {
+            0%,100% { transform: rotate(0deg); }
+            20% { transform: rotate(15deg); }
+            40% { transform: rotate(-10deg); }
+            60% { transform: rotate(5deg); }
+            80% { transform: rotate(-5deg); }
+        }
+        @keyframes pulse-scale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .anim-icon-urgent { display: inline-block; animation: swing 1.5s infinite ease-in-out; }
+        .anim-icon-soon { display: inline-block; animation: pulse-scale 2s infinite ease-in-out; }
+
+        /* 5. Dropdown Actions */
+        .btn-icon-dropdown {
+            background: transparent; border: none; color: #94a3b8;
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .btn-icon-dropdown:hover, .btn-icon-dropdown[aria-expanded="true"] {
+            background: #f1f5f9; color: var(--primary-color);
+        }
+        .dropdown-item { font-size: 0.85rem; padding: 8px 20px; cursor: pointer; }
+        .dropdown-item i { width: 20px; margin-right: 8px; text-align: center; }
+
+        /* 6. Styles Multi-produits & Notes */
+        .product-summary { font-weight: 600; color: #334155; font-size: 0.9rem; }
+        .product-more { font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; margin-left: 6px; font-weight: 600; }
+        .note-text { font-size: 0.8rem; color: #94a3b8; font-style: italic; margin-top: 4px; }
+
+        /* 7. Pagination Boutons */
+        .pagination { gap: 5px; }
+        .pagination .page-link {
+            border: none;
+            border-radius: 8px;
+            color: #64748b;
+            font-weight: 600;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+        }
+        .pagination .page-link:hover:not(.active) { background-color: #f1f5f9; color: var(--primary-color); }
+        .pagination .page-item.disabled .page-link { background-color: transparent; color: #cbd5e1; cursor: not-allowed; }
+
+        /* Stat Cards */
+        .stat-card-mini { background: white; border-radius: 12px; padding: 20px; box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: space-between; height: 100%; transition: transform 0.2s; }
+        .stat-card-mini:hover { transform: translateY(-3px); }
+        .stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar-container"></div>
+
+    <main class="main-content" id="mainContent">
+        <div id="topbar-container"></div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <span class="h4 fw-bold align-middle text-dark">Call Center</span>
+                <p class="text-muted small mb-0">Suivi des commandes, rappels et livraisons.</p>
+            </div>
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold" onclick="window.resetOrderModal(); new bootstrap.Modal(document.getElementById('orderModal')).show();">
+                <i class="fas fa-plus me-2"></i> Nouvelle Commande
+            </button>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="stat-card-mini">
+                    <div><div class="text-muted small fw-bold text-uppercase">Total Reçu</div><div class="h3 mb-0 fw-bold mt-1" id="statTotal">0</div></div>
+                    <div class="stat-icon bg-light text-primary"><i class="fas fa-clipboard-list"></i></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card-mini">
+                    <div><div class="text-muted small fw-bold text-uppercase">Confirmées</div><div class="h3 mb-0 fw-bold mt-1" id="statConfirmed">0</div></div>
+                    <div class="stat-icon" style="background:#e0f2fe; color:#075985"><i class="fas fa-thumbs-up"></i></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card-mini">
+                    <div><div class="text-muted small fw-bold text-uppercase">Programmées</div><div class="h3 mb-0 fw-bold mt-1" id="statProgrammed">0</div></div>
+                    <div class="stat-icon" style="background:#fef9c3; color:#854d0e"><i class="fas fa-clock"></i></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card-mini">
+                    <div><div class="text-muted small fw-bold text-uppercase">Échecs</div><div class="h3 mb-0 fw-bold mt-1 text-danger" id="statCancelled">0</div></div>
+                    <div class="stat-icon" style="background:#fee2e2; color:#991b1b"><i class="fas fa-ban"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-bar d-flex flex-column flex-md-row gap-3 align-items-md-center bg-white p-3 rounded-4 shadow-sm mb-4">
+            <div class="flex-grow-1 search-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Rechercher (Nom, Tél, Lieu, Article)...">
+            </div>
+            <div style="min-width: 200px;">
+                <select id="statusFilter" class="form-select border-0 bg-light fw-medium py-2">
+                    <option value="">Tous les statuts</option>
+                    <option value="En attente">En attente</option>
+                    <option value="Confirmer">Confirmer</option>
+                    <option value="Programmé">Programmé</option>
+                    <option value="À relancer">À relancer</option>
+                    <option value="Livré">Livré</option>
+                    <option value="Annulé">Annulé</option>
+                </select>
+            </div>
+            <div style="min-width: 150px;">
+                <input type="date" id="dateFilter" class="form-control border-0 bg-light fw-medium py-2">
+            </div>
+        </div>
+
+        <div class="custom-table bg-white rounded-4 shadow-sm border overflow-hidden">
+            <div class="table-responsive" style="min-height: 400px;">
+                <table class="table table-hover mb-0 table-compact align-middle" id="ordersTable">
+                    <thead class="bg-light border-bottom">
+                        <tr>
+                            <th class="ps-4 text-uppercase text-muted small fw-bold" style="width: 22%;">Client / Tél</th>
+                            <th class="text-uppercase text-muted small fw-bold" style="width: 18%;">Lieu</th>
+                            <th class="text-uppercase text-muted small fw-bold" style="width: 20%;">Articles</th> 
+                            <th class="text-center text-uppercase text-muted small fw-bold" style="width: 6%;">Qté</th>
+                            <th class="text-end text-uppercase text-muted small fw-bold" style="width: 10%;">Montant</th>
+                            <th class="text-uppercase text-muted small fw-bold" style="width: 12%;">Statut</th>
+                            <th class="text-uppercase text-muted small fw-bold" style="width: 15%;">Date / Note</th>
+                            <th class="text-end pe-4 text-uppercase text-muted small fw-bold" style="width: 5%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="p-3 d-flex justify-content-between align-items-center border-top bg-light bg-opacity-25">
+                <small class="text-muted">Affichage <span id="paginationInfoStart">0</span>-<span id="paginationInfoEnd">0</span> sur <span id="paginationInfoTotal">0</span></small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal fade" id="orderModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold ps-2" id="orderModalTitle">Nouvelle Commande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="orderForm">
+                        <input type="hidden" id="orderId">
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted">Client</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="far fa-user text-muted"></i></span>
+                                    <input type="text" class="form-control fw-bold border-start-0" id="orderClient" placeholder="Nom complet">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted">Téléphone <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-phone-alt text-muted"></i></span>
+                                    <input type="tel" class="form-control border-start-0" id="orderPhone" placeholder="6XX XX XX XX">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted">Lieu de Livraison</label>
+                            <input type="text" class="form-control" id="orderLocation" placeholder="Ville, Quartier, Repère...">
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-4 border position-relative">
+                            <label class="small fw-bold text-primary mb-2 text-uppercase" style="letter-spacing: 1px;">
+                                <i class="fas fa-shopping-cart me-1"></i> Panier
+                            </label>
+                            
+                            <div class="row g-2 align-items-end mb-2">
+                                <div class="col-md-5">
+                                    <input class="form-control form-control-sm" list="productDataList" id="addItemName" placeholder="Rechercher ou saisir...">
+                                    <datalist id="productDataList"></datalist>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control form-control-sm" id="addItemPrice" placeholder="Prix U.">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control form-control-sm text-center" id="addItemQty" value="1" min="1" placeholder="Qté">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-dark w-100 shadow-sm" id="btnAddItem">
+                                        <i class="fas fa-plus"></i> Ajouter
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive bg-white rounded border shadow-sm" style="max-height: 150px; overflow-y: auto;">
+                                <table class="table table-sm table-striped mb-0 small align-middle">
+                                    <tbody id="modalItemsList">
+                                        <tr class="text-center text-muted"><td class="py-3">Aucun article ajouté</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="small text-muted fst-italic">Ajoutez plusieurs produits si nécessaire</span>
+                                <div class="small fw-bold bg-white px-3 py-1 rounded border shadow-sm">
+                                    Total: <span id="modalTotalAmount" class="text-primary">0 FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="small fw-bold text-muted">Statut Actuel</label>
+                                <select class="form-select fw-medium" id="orderStatus">
+                                    <option value="En attente">En attente</option>
+                                    <option value="Confirmer">Confirmer</option>
+                                    <option value="Programmé">Programmé (Rappel)</option>
+                                    <option value="À relancer">À relancer (Rappel)</option>
+                                    <option value="Livré">Livré (Stock)</option>
+                                    <option value="Annulé">Annulé</option>
+                                    <option value="Rejeté">Rejeté</option>
+                                    <option value="Injoignable">Injoignable</option>
+                                    <option value="Ne décroche pas">Ne décroche pas</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-7 d-none" id="deliveryStoreSection">
+                                <label class="small fw-bold text-success">Déstocker du magasin :</label>
+                                <select class="form-select border-success text-success fw-medium" id="orderDeliveryStore"></select>
+                            </div>
+
+                            <div class="col-md-7 d-none" id="reminderSection">
+                                <label class="small fw-bold text-warning">Programmation du Rappel</label>
+                                <div class="input-group">
+                                    <input type="date" class="form-control border-warning" id="orderReminderDate">
+                                    <input type="time" class="form-control border-warning" id="orderReminderTime">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="small fw-bold text-muted">Note interne</label>
+                            <textarea class="form-control" id="orderComment" rows="2" placeholder="Information importante..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0 pe-4 pb-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="saveOrderBtn">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Détails Commande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group list-group-flush" id="detailsList"></ul>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button class="btn btn-success w-100 rounded-pill shadow-sm fw-bold" id="copyToClipboardBtn">
+                        <i class="fab fa-whatsapp me-2"></i> Copier pour Livraison
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/orders.js"></script>
+</body>
+</html>
