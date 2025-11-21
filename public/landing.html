@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Offre Spéciale</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --primary-color: #dc2626; }
+        body { font-family: 'Inter', sans-serif; background-color: #e2e8f0; margin: 0; padding-bottom: 140px; }
+        
+        .mobile-container {
+            max-width: 480px; margin: 0 auto; background: white; min-height: 100vh;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow-x: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* ELEMENTS FLOTTANTS */
+        .floating-zone {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 480px;
+            padding: 0 15px 20px 15px; z-index: 900;
+            pointer-events: none;
+            display: flex; flex-direction: column; gap: 10px; align-items: center;
+        }
+
+        .floating-btn { 
+            pointer-events: auto; width: 100%; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); 
+            transition: transform 0.1s; cursor: pointer;
+            border: none; font-weight: 700; text-transform: uppercase;
+        }
+        .floating-btn:active { transform: scale(0.98); }
+
+        .wa-float-icon {
+            pointer-events: auto; width: 55px; height: 55px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: fixed; bottom: 100px; z-index: 901;
+            text-decoration: none; transition: transform 0.2s;
+        }
+        .wa-float-icon:hover { transform: scale(1.1); color: white; }
+        
+        /* TIMER */
+        .sticky-timer { text-align: center; font-weight: bold; font-size: 0.9rem; padding: 10px; z-index: 800; }
+        .timer-top { position: sticky; top: 0; width: 100%; }
+        .timer-floating { position: absolute; top: 15px; right: 15px; border-radius: 50px; width: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 0.75rem; padding: 5px 12px; }
+        .timer-inline { margin: 10px 15px; border-radius: 8px; }
+        .timer-form { margin-bottom: 15px; border-radius: 8px; text-align: center; padding: 8px; width: 100%; display: block; }
+
+        /* STOCK & IMAGE */
+        .stock-bar-container { padding: 10px 15px; background: #fff; border-bottom: 1px solid #f1f5f9; }
+        .hero-image-container { width: 100%; cursor: pointer; background: #fff; display: block; position: relative; }
+        .hero-image { width: 100%; height: auto; display: block; }
+
+        /* MODALE */
+        .custom-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+            z-index: 2000; display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .custom-modal-overlay.active { opacity: 1; pointer-events: all; }
+        .custom-modal-content {
+            background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+            max-height: 90vh; overflow-y: auto; transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+        }
+        .custom-modal-overlay.active .custom-modal-content { transform: translateY(0); }
+
+        /* FORMULAIRE */
+        .input-group-text { background: #f8fafc; border: 1px solid #e2e8f0; border-right: none; color: #64748b; border-radius: 10px 0 0 10px; }
+        .form-control-lg { border: 1px solid #e2e8f0; border-left: none; background: #f8fafc; border-radius: 0 10px 10px 0; font-size: 1rem; padding: 12px; }
+        .form-control-lg:focus { background: white; box-shadow: none; border-color: var(--primary-color); }
+        
+        .offer-card { background: white; border: 2px solid #f1f5f9; border-radius: 12px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+        .offer-card.selected { border-color: var(--primary-color); background: #fef2f2; box-shadow: 0 4px 12px rgba(220,38,38,0.1); }
+        
+        .d-none { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-container" id="mainContainer">
+        <div id="timerTop" class="sticky-timer timer-top d-none"></div>
+        <div id="timerFloating" class="sticky-timer timer-floating d-none"></div>
+
+        <div class="hero-image-container" onclick="openModal()">
+            <img id="heroImage" src="" class="hero-image" style="display:none;">
+            <div id="noImage" class="d-none p-5 text-center text-muted" style="min-height:400px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                <i class="fas fa-image fa-3x mb-3 opacity-25"></i><br>Aucune image
+            </div>
+        </div>
+
+        <div id="stockBar" class="stock-bar-container d-none"></div>
+        <div id="timerInline" class="sticky-timer timer-inline d-none"></div>
+    </div>
+
+    <div class="floating-zone">
+        <a href="#" id="waBtnLarge" target="_blank" class="floating-btn rounded-pill text-center text-white py-2 d-none text-decoration-none d-flex align-items-center justify-content-center gap-2" style="font-size:0.9rem; width:90%;">
+            <i class="fab fa-whatsapp"></i> <span id="waBtnText">WhatsApp</span>
+        </a>
+        <button id="mainCtaBtn" class="floating-btn text-white py-3" onclick="openModal()">
+            COMMANDER
+        </button>
+    </div>
+
+    <a href="#" id="waIconFloat" target="_blank" class="wa-float-icon d-none">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <div id="orderModal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <div class="bg-white p-3 border-bottom sticky-top d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">Finaliser ma commande</h6>
+                <button class="btn btn-sm btn-light rounded-circle" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4">
+                <div id="timerForm" class="sticky-timer timer-form d-none bg-warning bg-opacity-10 border border-warning text-warning-emphasis"></div>
+
+                <div class="mb-4">
+                    <div id="offersList"></div>
+                </div>
+                <div>
+                    <p class="small fw-bold text-muted text-uppercase mb-2">Vos coordonnées</p>
+                    <form id="checkoutForm" onsubmit="handleOrderSubmit(event)">
+                        <div class="input-group mb-3"><span class="input-group-text"><i class="fas fa-user"></i></span><input type="text" id="inpName" class="form-control form-control-lg" placeholder="Nom Complet" required></div>
+                        <div class="input-group mb-3"><span class="input-group-text"><i class="fas fa-phone"></i></span><input type="tel" id="inpPhone" class="form-control form-control-lg" placeholder="Téléphone" required></div>
+                        <div class="input-group mb-4"><span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span><input type="text" id="inpCity" class="form-control form-control-lg" placeholder="Ville & Quartier" required></div>
+                        
+                        <div id="shippingDisplay" class="text-center small fw-bold mb-3"></div>
+
+                        <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow btn-lg" id="formSubmitBtn">VALIDER</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pageData = {};
+        let timerInterval = null;
+        let selectedOfferIndex = 0; // Suivi de l'offre sélectionnée
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dataStr = localStorage.getItem('winkshop_landing_data');
+            if(!dataStr) return;
+            pageData = JSON.parse(dataStr);
+            initPage(pageData);
+        });
+
+        function initPage(data) {
+            // 1. VISUEL
+            const img = document.getElementById('heroImage');
+            if(data.image) { img.src = data.image; img.style.display = 'block'; }
+            else document.getElementById('noImage').classList.remove('d-none');
+
+            // 2. BOUTONS
+            const cta = document.getElementById('mainCtaBtn');
+            cta.textContent = data.ctaText || 'COMMANDER';
+            cta.style.backgroundColor = data.ctaColor;
+            if(data.ctaShape === 'pill') cta.classList.add('rounded-pill'); else cta.classList.add('rounded-3');
+            if(data.ctaAnimation && data.ctaAnimation !== 'none') cta.classList.add('animate__animated', `animate__${data.ctaAnimation}`, 'animate__infinite');
+
+            // 3. WHATSAPP
+            if(data.whatsappEnabled) {
+                const waLink = `https://wa.me/${data.whatsappNumber.replace(/\D/g,'')}`;
+                if(data.whatsappStyle === 'button') {
+                    const btn = document.getElementById('waBtnLarge');
+                    btn.classList.remove('d-none');
+                    btn.href = waLink;
+                    btn.style.backgroundColor = data.whatsappColor;
+                    btn.querySelector('#waBtnText').textContent = data.whatsappText || 'WhatsApp';
+                } else {
+                    const icon = document.getElementById('waIconFloat');
+                    icon.classList.remove('d-none');
+                    icon.href = waLink;
+                    icon.style.backgroundColor = data.whatsappColor;
+                    if(data.whatsappPos === 'left') { icon.style.left = '20px'; icon.style.right = 'auto'; } 
+                    else { icon.style.right = '20px'; icon.style.left = 'auto'; }
+                }
+            }
+
+            // 4. OFFRES & SUIVI SELECTION
+            const list = document.getElementById('offersList');
+            list.className = data.offersStyle === 'modern-card' ? 'row g-2' : 'd-flex flex-column gap-2';
+            
+            // Trouver l'index par défaut
+            const defaultIndex = data.offers.findIndex(o => o.isDefault);
+            selectedOfferIndex = defaultIndex >= 0 ? defaultIndex : 0;
+
+            list.innerHTML = data.offers.map((o,i) => {
+                const isSelected = (i === selectedOfferIndex);
+                const borderClass = isSelected ? 'selected' : '';
+                const checked = isSelected ? 'checked' : '';
+                const colClass = data.offersStyle === 'modern-card' ? 'col-6' : 'col-12';
+                
+                return `
+                <div class="${colClass}">
+                    <div class="offer-card ${borderClass}" onclick="selOffer(this, ${i})">
+                        <div class="d-flex justify-content-between align-items-center ${data.offersStyle==='modern-card'?'flex-column text-center':''}">
+                            <div class="d-flex align-items-center">
+                                <input type="radio" name="off" ${checked} class="form-check-input me-2" style="transform:scale(1.3)">
+                                <div><div class="fw-bold">${o.name}</div><div class="small text-muted">${o.qty} Unité(s)</div></div>
+                            </div>
+                            <div class="fw-bold text-danger ${data.offersStyle==='modern-card'?'mt-2':''}">${new Intl.NumberFormat('fr-FR').format(o.price)} FCFA</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // 5. TIMERS & STOCK
+            if(data.timerEnabled) startTimer(parseInt(data.timerDuration)||15, data);
+            if(data.stockEnabled) renderStockBar(data);
+            renderLogistics(data);
+        }
+
+        function renderStockBar(data) {
+            const container = document.getElementById('stockBar');
+            container.classList.remove('d-none');
+            let qty = parseInt(data.stockQty);
+            if(data.stockType === 'random') {
+                const storedQty = localStorage.getItem('winkshop_stock_qty');
+                if(storedQty) qty = parseInt(storedQty);
+                else { qty = Math.floor(Math.random() * (qty - 2 + 1)) + 2; localStorage.setItem('winkshop_stock_qty', qty); }
+            }
+            const text = data.stockText.replace('{stock}', `<strong style="font-size:1.1em">${qty}</strong>`);
+            const color = data.stockColor;
+            let html = '';
+            if(data.stockStyle === 'bar') html = `<div class="d-flex justify-content-between small mb-1 fw-bold" style="color:${color}">${text}</div><div class="progress" style="height: 8px; background-color: #e5e7eb;"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 85%; background-color: ${color};"></div></div>`;
+            else if(data.stockStyle === 'pulse') html = `<div class="text-center"><div class="d-inline-block px-3 py-2 rounded-pill fw-bold animate__animated animate__pulse animate__infinite" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color};">${text}</div></div>`;
+            else html = `<div class="fw-bold text-center" style="color:${color}">${text}</div>`;
+            container.innerHTML = html;
+        }
+
+        function renderLogistics(data) {
+            const btn = document.getElementById('formSubmitBtn');
+            const iconClass = data.formCtaIcon || 'check';
+            btn.innerHTML = `<i class="fas fa-${iconClass} me-2"></i> ${data.formCtaText || 'VALIDER'}`;
+            const disp = document.getElementById('shippingDisplay');
+            if(data.shippingMode === 'free') { disp.innerHTML = '<i class="fas fa-truck me-1"></i> Livraison GRATUITE'; disp.className = 'text-center small fw-bold text-success mb-3'; }
+            else if(data.shippingMode === 'fixed') { disp.innerHTML = `<i class="fas fa-truck me-1"></i> Livraison : ${data.shippingPrice} FCFA`; disp.className = 'text-center small fw-bold text-dark mb-3'; }
+            else { disp.innerHTML = `<i class="fas fa-info-circle me-1"></i> ${data.shippingText}`; disp.className = 'text-center small fw-bold text-primary mb-3'; }
+        }
+
+        function startTimer(minutes, data) {
+            let seconds = minutes * 60;
+            const render = (timeStr) => {
+                const html = `<i class="fas fa-clock me-1"></i> ${data.timerText} <span style="font-family:monospace; font-size:1.1em">${timeStr}</span>`;
+                const pos = data.timerPosition;
+                const targets = [];
+                if(pos !== 'none') targets.push(document.getElementById(pos === 'topbar' ? 'timerTop' : pos === 'floating' ? 'timerFloating' : 'timerInline'));
+                if(data.timerInForm) targets.push(document.getElementById('timerForm'));
+                targets.forEach(el => {
+                    if(el) {
+                        el.classList.remove('d-none'); el.innerHTML = html; el.style.color = data.timerColor;
+                        if(el.id === 'timerTop') el.style.backgroundColor = data.timerBg;
+                        else if(el.id === 'timerFloating' || el.id === 'timerInline') {
+                            if(data.timerStyle !== 'minimal') el.style.backgroundColor = data.timerBg; else el.style.backgroundColor = 'transparent';
+                        }
+                    }
+                });
+            };
+            timerInterval = setInterval(() => {
+                const m = Math.floor(seconds / 60); const s = seconds % 60;
+                render(`${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`);
+                if (seconds > 0) seconds--; else clearInterval(timerInterval);
+            }, 1000);
+        }
+
+        function selOffer(el, idx) {
+            selectedOfferIndex = idx; // Mise à jour de l'index sélectionné
+            document.querySelectorAll('.offer-card').forEach(c => {
+                c.classList.remove('selected');
+                c.querySelector('input').checked = false;
+            });
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+        }
+
+        window.openModal = () => { document.getElementById('orderModal').classList.add('active'); document.body.style.overflow = 'hidden'; };
+        window.closeModal = () => { document.getElementById('orderModal').classList.remove('active'); document.body.style.overflow = 'auto'; };
+
+        window.handleOrderSubmit = (e) => {
+            e.preventDefault();
+            
+            // Récupération de l'offre sélectionnée via l'index
+            const selectedOffer = pageData.offers[selectedOfferIndex];
+            
+            const order = {
+                client: document.getElementById('inpName').value,
+                phone: document.getElementById('inpPhone').value,
+                city: document.getElementById('inpCity').value,
+                product: pageData.productName,
+                price: selectedOffer ? selectedOffer.price : 0, // Prix réel
+                qty: selectedOffer ? selectedOffer.qty : 1      // Qté réelle
+            };
+            
+            localStorage.setItem('winkshop_last_order', JSON.stringify(order));
+            window.location.href = 'thankyou.html';
+        };
+    </script>
+</body>
+</html>

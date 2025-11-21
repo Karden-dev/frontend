@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merci pour votre commande !</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        
+        /* STYLE 1: CARTE SIMPLE (Pro) */
+        .style-card { 
+            max-width: 500px; margin: 20px; background: white; padding: 40px; 
+            border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); 
+            text-align: center; border: 1px solid #f1f5f9; 
+        }
+        .style-card .icon-box { 
+            width: 80px; height: 80px; background: #dcfce7; color: #16a34a; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 40px; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(22, 163, 74, 0.2);
+        }
+
+        /* STYLE 2: FULL SCREEN (Festif) */
+        .style-full { 
+            background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%); 
+            color: white; width: 100%; min-height: 100vh; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            text-align: center; padding: 20px; 
+        }
+        .style-full .icon-box { font-size: 80px; margin-bottom: 20px; animation: heartBeat 1.5s infinite; text-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .style-full .content-box { 
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); 
+            padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); 
+            max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        /* Résumé Commande */
+        .summary-box { background: #f8fafc; padding: 20px; border-radius: 16px; margin: 25px 0; text-align: left; font-size: 0.95rem; color: #334155; border: 1px solid #e2e8f0; }
+        .style-full .summary-box { background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* Bouton VIP */
+        .btn-vip { transition: transform 0.2s, box-shadow 0.2s; border: none; }
+        .btn-vip:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+
+    <div id="thankYouContainer" class="w-100 d-flex justify-content-center"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Récupérer la configuration globale (Builder)
+            const configStr = localStorage.getItem('winkshop_landing_data');
+            // Valeurs par défaut si pas de config (mode test direct)
+            const config = configStr ? JSON.parse(configStr) : { 
+                tyStyle: 'card', 
+                tyTitle: 'Félicitations {client} !', 
+                tyMsg: 'Votre commande de {produit} a bien été reçue.',
+                tyRedirectEnabled: true, // Pour tester
+                tyBtnText: 'Rejoindre le groupe VIP',
+                tyBtnLink: '#',
+                tyBtnColor: '#16a34a',
+                tyBtnIcon: 'whatsapp'
+            };
+
+            // 2. Récupérer les données de la DERNIÈRE commande (Client, Montant...)
+            const orderStr = localStorage.getItem('winkshop_last_order');
+            // Valeurs par défaut pour la prévisualisation
+            const order = orderStr ? JSON.parse(orderStr) : { 
+                client: 'Client Test', 
+                product: 'Produit Exemple', 
+                qty: 1, 
+                price: 15000, 
+                city: 'Douala' 
+            };
+
+            renderPage(config, order);
+        });
+
+        function renderPage(conf, ord) {
+            const container = document.getElementById('thankYouContainer');
+            
+            // Remplacement des variables {tags}
+            let title = conf.tyTitle || 'Merci !';
+            let msg = conf.tyMsg || 'Commande validée.';
+            
+            const replaceTags = (text) => {
+                return text
+                    .replace(/{client}/g, ord.client || 'Client')
+                    .replace(/{produit}/g, ord.product || 'Produit')
+                    .replace(/{quantite}/g, ord.qty || 1)
+                    .replace(/{montant}/g, new Intl.NumberFormat('fr-FR').format(ord.price || 0))
+                    .replace(/{ville}/g, ord.city || 'votre ville');
+            };
+
+            title = replaceTags(title);
+            msg = replaceTags(msg);
+
+            // Construction du Bouton VIP (seulement si activé)
+            let btnHtml = '';
+            if (conf.tyRedirectEnabled && conf.tyBtnLink) {
+                // Mapping Icones
+                const icons = {
+                    'whatsapp': 'fab fa-whatsapp',
+                    'telegram': 'fab fa-telegram',
+                    'gift': 'fas fa-gift',
+                    'star': 'fas fa-star'
+                };
+                const iconClass = icons[conf.tyBtnIcon] || 'fas fa-arrow-right';
+                const btnColor = conf.tyBtnColor || '#16a34a';
+                
+                // Si style festif, on force un bouton blanc/clair pour le contraste, sinon couleur perso
+                const styleAttr = conf.tyStyle === 'full' 
+                    ? `background: white; color: ${btnColor};` 
+                    : `background: ${btnColor}; color: white;`;
+
+                btnHtml = `
+                    <a href="${conf.tyBtnLink}" target="_blank" class="btn btn-lg rounded-pill px-5 fw-bold mt-2 btn-vip animate__animated animate__pulse animate__infinite" 
+                       style="${styleAttr}">
+                        <i class="${iconClass} me-2"></i> ${conf.tyBtnText || 'Cliquez ici'}
+                    </a>
+                `;
+            }
+
+            // Détails commande (Résumé)
+            const detailsHtml = `
+                <div class="summary-box">
+                    <div class="d-flex justify-content-between mb-2"><span>Produit:</span> <strong>${ord.product} (x${ord.qty})</strong></div>
+                    <div class="d-flex justify-content-between mb-2"><span>Livraison:</span> <strong>${ord.city}</strong></div>
+                    <div class="border-top my-2 pt-2"></div>
+                    <div class="d-flex justify-content-between" style="font-size:1.1em;"><span>Total à payer:</span> <strong>${new Intl.NumberFormat('fr-FR').format(ord.price || 0)} FCFA</strong></div>
+                </div>
+            `;
+
+            // RENDU FINAL SELON LE MODELE
+            if (conf.tyStyle === 'full') {
+                // --- Modèle FESTIF / PLEIN ÉCRAN ---
+                document.body.className = 'style-full'; // Change le fond du body
+                container.innerHTML = `
+                    <div class="content-box animate__animated animate__zoomIn">
+                        <div class="icon-box"><i class="fas fa-check-circle"></i></div>
+                        <h1 class="fw-bold mb-3">${title}</h1>
+                        <p class="lead mb-4 opacity-75">${msg}</p>
+                        ${detailsHtml}
+                        ${btnHtml}
+                        <div class="mt-4 small opacity-50">Un conseiller va vous appeler sous peu pour confirmer.</div>
+                    </div>
+                `;
+            } else {
+                // --- Modèle CARTE (Défaut / Pro) ---
+                document.body.style.backgroundColor = "#f8fafc"; // Reset fond
+                container.innerHTML = `
+                    <div class="style-card animate__animated animate__fadeInUp">
+                        <div class="icon-box"><i class="fas fa-check"></i></div>
+                        <h2 class="fw-bold text-dark mb-3">${title}</h2>
+                        <p class="text-muted mb-4">${msg}</p>
+                        ${detailsHtml}
+                        ${btnHtml}
+                        <div class="mt-4 small text-muted">Votre commande est enregistrée avec succès.<br>Gardez votre téléphone allumé !</div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
